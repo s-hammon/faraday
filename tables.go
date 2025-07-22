@@ -1,31 +1,14 @@
 package main
 
-// These are all of the "official" tables
-// Nice to have to check for anything following
-// convention, but again--nothing is enforced.
-
-// An example are the nefarious "Z" segments
+// HL7- and ISO-defined tables.
+// Note that this does not include user-defined tables.
+// By nature, those should be configured.
 
 type ControlTable map[ID]struct{}
 
 func (table ControlTable) Valid(v ID) bool {
 	_, ok := table[v]
 	return ok
-}
-
-var UniversalIdTypes = ControlTable{
-	"DNS":    {},
-	"GUID":   {},
-	"HCD":    {},
-	"HL7":    {},
-	"ISO":    {},
-	"L":      {},
-	"M":      {},
-	"N":      {},
-	"Random": {},
-	"UUID":   {},
-	"x400":   {},
-	"x500":   {},
 }
 
 // All of the different HL7 message types
@@ -393,6 +376,214 @@ var AcknowledgementConditions = ControlTable{
 	"SU": {},
 }
 
+// They're "alternate" because HL7 is supposed to be UTF-8
+var AlternateCharacterSets = ControlTable{
+	"8859/1":     {},
+	"8859/2":     {},
+	"8859/3":     {},
+	"8859/4":     {},
+	"8859/5":     {},
+	"8859/6":     {},
+	"8859/7":     {},
+	"8859/8":     {},
+	"8859/9":     {},
+	"ASCII":      {},
+	"JAS2020":    {},
+	"JIS X 0202": {},
+	"UNICODE":    {},
+}
+
+// HL7 Table 0061
+var CheckDigitScheme = map[ID]struct{}{
+	"M10": {},
+	"M11": {},
+}
+
+// HL7 Table 0103
+var ProcessingIds = map[ID]struct{}{
+	"D": {},
+	"P": {},
+	"T": {},
+}
+
+// HL7 Table 0102
+var RelationalConjunctions = map[ID]string{
+	"AND": "",
+	"OR":  "",
+}
+
+// HL7 Table 0190
+var AddressTypes = map[ID]struct{}{
+	"B": {}, // Firm/Business
+	"C": {}, // Current or Temporary
+	"F": {}, // Country of Origin
+	"H": {}, // Home
+	"M": {}, // Mailing
+	"N": {}, // Birth (nee)
+	"O": {}, // Office
+	"P": {}, // Permanent
+}
+
+// HL7 Table 0191
+var ReferencedDataTypes = map[ID]string{
+	"SI":          "scanned image",
+	"NS":          "non-scanned image",
+	"SD":          "scanned document",
+	"TX":          "machine readable text document",
+	"FT":          "formatted text",
+	"Image":       "image data",
+	"Audio":       "audio data",
+	"Application": "other application data (binary)",
+}
+
+// HL7 Table 0200
+var NameTypeCodes = map[ID]struct{}{
+	"A": {},
+	"C": {},
+	"D": {},
+	"L": {},
+	"M": {},
+}
+
+// HL7 Table 0201
+var TelecommunicationUseCodes = map[ID]string{
+	"ASN": "Answering service number",
+	"BPN": "Beeper number",
+	"EMR": "Emergency number",
+	"NET": "Network email address",
+	"ORN": "Other residence number",
+	"PRN": "Primary residence number",
+	"VHN": "Vacation home number",
+	"WPN": "Work number",
+}
+
+// HL7 Table 0202
+var TelecommunicationEquipmentTypes = map[ID]string{
+	"BP":       "Beeper",
+	"CP":       "Cellphone",
+	"FX":       "Fax",
+	"Internet": "Internet",
+	"MD":       "Modem",
+	"PH":       "Telephone",
+	"X.400":    "X.400 email address",
+}
+
+// HL7 Table 0203
+var IdentifierTypeCodes = map[IS]string{
+	"AM":   "American Express",
+	"AN":   "Account Number",
+	"BR":   "Birth Registry Number",
+	"DI":   "Diner's Club Card",
+	"DL":   "Driver's License Number",
+	"DN":   "Doctor Number",
+	"DS":   "Discover Card",
+	"EI":   "Employee Number",
+	"EN":   "Employer Number",
+	"GI":   "Guarantor Internal Identifier",
+	"GN":   "Guarantor External Identifier",
+	"MA":   "Medicaid Number",
+	"MC":   "Medicare Number",
+	"MR":   "Medicaid Record Number",
+	"MS":   "MasterCard",
+	"PI":   "Patient Internal Identifier",
+	"PN":   "Person Number",
+	"PT":   "Patient External Identifier",
+	"RR":   "Railroad Retirement Number",
+	"SS":   "Social Security Number",
+	"UPIN": "Medicare/HCFA's Universal Physician Identification Numbers",
+	"VN":   "Visit Number",
+	"VS":   "VISA",
+	"XX":   "Organization Identifier",
+}
+
+// HL7 Table 0205
+var PriceTypes = map[ID]string{
+	"AP": "administrative price or handling fee",
+	"PF": "professional fee for performing provider",
+	"UP": "unit price, may be based on length of procedure or service",
+	"TF": "technology fee for use of equipment",
+	"DC": "direct unit cost",
+	"IC": "indirect unit cost",
+	"TP": "total price",
+}
+
+// HL7 Table 0207
+var ProcessingModes = map[ID]struct{}{
+	"a":           {},
+	"i":           {},
+	"Not present": {},
+	"r":           {},
+}
+
+// HL7 Table 0209
+var RelationalOperators = map[ID]string{
+	"EQ": "Equal",
+	"NE": "Not Equal",
+	"LT": "Less than",
+	"GT": "Greater than",
+	"LE": "Less than or equal",
+	"GE": "Greater than or equal",
+	"CT": "Contains",
+	"GN": "Generic",
+}
+
+// HL7 Table 0267
+var DaysOfWeek = map[ID]string{
+	"SAT": "Saturday",
+	"SUN": "Sunday",
+	"MON": "Monday",
+	"TUE": "Tuesday",
+	"WED": "Wednesday",
+	"THU": "Thursday",
+	"FRI": "Friday",
+}
+
+// HL7 Table 0291
+var ReferencedDataSubTypes = map[ID]string{
+	"TIFF":         "TIFF image data",
+	"PICT":         "PICT image data",
+	"DICOM":        "Digital Imaging and Communications in Medicine",
+	"FAX":          "facsimile data",
+	"JOT":          "electronic ink data",
+	"BASIC":        "ISDN PCM audio data",
+	"Octet-stream": "Uninterpreted binary data",
+	"PostScript":   "PostScript program",
+	"JPEG":         "joint photographic experts group",
+	"GIF":          "graphics interchange format",
+	"HTML":         "hypertext markup language",
+	"RTF":          "rich text format",
+}
+
+// HL7 Table 0298
+var RangeTypes = map[ID]string{
+	"P": "pro-rate",
+	"F": "flat-rate",
+}
+
+// HL7 Table 0301
+var UniversalIdTypes = map[ID]string{
+	"DNS":    "Internet dotted name (ASCII or integers)",
+	"GUID":   "alias for UUID",
+	"HCD":    "CEN Healthcare Coding Scheme Designator",
+	"HL7":    "HL7 registration scheme",
+	"ISO":    "International Standards Organization",
+	"L":      "Locally Defined",
+	"M":      "Locally Defined",
+	"N":      "Locally Defined",
+	"Random": "random bits",
+	"UUID":   "Universal Unique Identifier",
+	"x400":   "X.400 MHS format identifier",
+	"x500":   "X.500 directory name",
+}
+
+// HL7 Table 4000
+var NameRepresentationCodes = map[ID]string{
+	"I": "Ideographic",
+	"A": "Alphabetic",
+	"P": "Phonetic",
+}
+
+// ISO 3166
 var CountryCodes = ControlTable{
 	"ABW": {}, "AFG": {}, "AGO": {}, "AIA": {}, "ALA": {}, "ALB": {}, "AND": {}, "ARE": {}, "ARG": {}, "ARM": {},
 	"ASM": {}, "ATA": {}, "ATF": {}, "ATG": {}, "AUS": {}, "AUT": {}, "AZE": {}, "BDI": {}, "BEL": {}, "BEN": {},
@@ -421,170 +612,185 @@ var CountryCodes = ControlTable{
 	"VIR": {}, "VNM": {}, "VUT": {}, "WLF": {}, "WSM": {}, "YEM": {}, "ZAF": {}, "ZMB": {}, "ZWE": {},
 }
 
-// They're "alternate" because HL7 is supposed to be UTF-8
-var AlternateCharacterSets = ControlTable{
-	"8859/1":     {},
-	"8859/2":     {},
-	"8859/3":     {},
-	"8859/4":     {},
-	"8859/5":     {},
-	"8859/6":     {},
-	"8859/7":     {},
-	"8859/8":     {},
-	"8859/9":     {},
-	"ASCII":      {},
-	"JAS2020":    {},
-	"JIS X 0202": {},
-	"UNICODE":    {},
-}
-
-var IdentifierTypeCodes = ControlTable{
-	"AM": {},
-	"AN": {},
-	"BR": {},
-	"DI": {},
-	"DL": {},
-	"DS": {},
-	"EI": {},
-	"EN": {},
-	"GI": {},
-	"GN": {},
-	"MA": {},
-	"MC": {},
-	"MR": {},
-	"MS": {},
-	"PI": {},
-	"PT": {},
-	"RR": {},
-	"SS": {},
-	"VN": {},
-	"VS": {},
-}
-
-// NOTE: pretty much any of these tables that use ST/ID keys won't have a
-// validator. Nobody in healthcare IT is sophisticated enough to use the
-// following map, for example.
-var ProcessingIds = map[ST]struct{}{
-	"D": {},
-	"P": {},
-	"T": {},
-}
-
-var ProcessingModes = map[ST]struct{}{
-	"a":           {},
-	"i":           {},
-	"Not present": {},
-	"r":           {},
-}
-
-var CheckDigitScheme = map[ID]struct{}{
-	"M10": {},
-	"M11": {},
-}
-
-var NameTypeCodes = map[ID]struct{}{
-	"A": {},
-	"C": {},
-	"D": {},
-	"L": {},
-	"M": {},
-	"O": {},
-}
-
-var NameAddressRepresentation = map[ID]struct{}{
-	"A": {},
-	"I": {},
-	"P": {},
-}
-
-var Sex = map[ID]struct{}{
-	"F": {},
-	"M": {},
-	"O": {},
-	"U": {},
-}
-
-var AddressTypes = map[ID]struct{}{
-	"B": {},
-	"C": {},
-	"F": {},
-	"H": {},
-	"M": {},
-	"O": {},
-	"P": {},
-}
-
-// American, obviously
-var States = map[ST]struct{}{
-	"Alabama":        {},
-	"Alaska":         {},
-	"Arizona":        {},
-	"Arkansas":       {},
-	"California":     {},
-	"Colorado":       {},
-	"Connecticut":    {},
-	"Delaware":       {},
-	"Florida":        {},
-	"Georgia":        {},
-	"Hawaii":         {},
-	"Idaho":          {},
-	"Illinois":       {},
-	"Indiana":        {},
-	"Iowa":           {},
-	"Kansas":         {},
-	"Kentucky":       {},
-	"Louisiana":      {},
-	"Maine":          {},
-	"Maryland":       {},
-	"Massachusetts":  {},
-	"Michigan":       {},
-	"Minnesota":      {},
-	"Mississippi":    {},
-	"Missouri":       {},
-	"Montana":        {},
-	"Nebraska":       {},
-	"Nevada":         {},
-	"New Hampshire":  {},
-	"New Jersey":     {},
-	"New Mexico":     {},
-	"New York":       {},
-	"North Carolina": {},
-	"North Dakota":   {},
-	"Ohio":           {},
-	"Oklahoma":       {},
-	"Oregon":         {},
-	"Pennsylvania":   {},
-	"Rhode Island":   {},
-	"South Carolina": {},
-	"South Dakota":   {},
-	"Tennessee":      {},
-	"Texas":          {},
-	"Utah":           {},
-	"Vermont":        {},
-	"Virginia":       {},
-	"Washington":     {},
-	"West Virginia":  {},
-	"Wisconsin":      {},
-	"Wyoming":        {},
-}
-
-var TelecommunicationUseCodes = map[ID]struct{}{
-	"ASN": {},
-	"BPN": {},
-	"EMR": {},
-	"NET": {},
-	"ORN": {},
-	"PRN": {},
-	"VHN": {},
-	"WPN": {},
-}
-
-var TelecommunicationEquipmentTypes = map[ID]struct{}{
-	"BP":       {},
-	"CP":       {},
-	"FX":       {},
-	"Internet": {},
-	"MD":       {},
-	"PH":       {},
-	"X.400":    {},
+// ISO 4217 Table A.1
+var IsoDenominations = map[ID]string{
+	"AED": "United Arab Emirates dirham",
+	"AFN": "Afghan afghani",
+	"ALL": "Albanian lek",
+	"AMD": "Armenian dram",
+	"AOA": "Angolan kwanza",
+	"ARS": "Argentine peso",
+	"AUD": "Australian dollar",
+	"AWG": "Aruban florin",
+	"AZN": "Azerbaijani manat",
+	"BAM": "Bosnia and Herzegovina convertible mark",
+	"BBD": "Barbados dollar",
+	"BDT": "Bangladeshi taka",
+	"BGN": "Bulgarian lev",
+	"BHD": "Bahraini dinar",
+	"BIF": "Burundian franc",
+	"BMD": "Bermudian dollar",
+	"BND": "Brunei dollar",
+	"BOB": "Boliviano",
+	"BOV": "Bolivian Mvdol (funds code)",
+	"BRL": "Brazilian real",
+	"BSD": "Bahamian dollar",
+	"BTN": "Bhutanese ngultrum",
+	"BWP": "Botswana pula",
+	"BYN": "Belarusian ruble",
+	"BZD": "Belize dollar",
+	"CAD": "Canadian dollar",
+	"CDF": "Congolese franc",
+	"CHE": "WIR euro (complementary currency)",
+	"CHF": "Swiss franc",
+	"CHW": "WIR franc (complementary currency)",
+	"CLF": "Unidad de Fomento (funds code)",
+	"CLP": "Chilean peso",
+	"CNY": "Renminbi",
+	"COP": "Colombian peso",
+	"COU": "Unidad de Valor Real (UVR) (funds code)",
+	"CRC": "Costa Rican colon",
+	"CUP": "Cuban peso",
+	"CVE": "Cape Verdean escudo",
+	"CZK": "Czech koruna",
+	"DJF": "Djiboutian franc",
+	"DKK": "Danish krone",
+	"DOP": "Dominican peso",
+	"DZD": "Algerian dinar",
+	"EGP": "Egyptian pound",
+	"ERN": "Eritrean nakfa",
+	"ETB": "Ethiopian birr",
+	"EUR": "Euro",
+	"FJD": "Fiji dollar",
+	"FKP": "Falkland Islands pound",
+	"GBP": "Pound sterling",
+	"GEL": "Georgian lari",
+	"GHS": "Ghanaian cedi",
+	"GIP": "Gibraltar pound",
+	"GMD": "Gambian dalasi",
+	"GNF": "Guinean franc",
+	"GTQ": "Guatemalan quetzal",
+	"GYD": "Guyanese dollar",
+	"HKD": "Hong Kong dollar",
+	"HNL": "Honduran lempira",
+	"HTG": "Haitian gourde",
+	"HUF": "Hungarian forint",
+	"IDR": "Indonesian rupiah",
+	"ILS": "Israeli new shekel",
+	"INR": "Indian rupee",
+	"IQD": "Iraqi dinar",
+	"IRR": "Iranian rial",
+	"ISK": "Icelandic króna",
+	"JMD": "Jamaican dollar",
+	"JOD": "Jordanian dinar",
+	"JPY": "Japanese yen",
+	"KES": "Kenyan shilling",
+	"KGS": "Kyrgyzstani som",
+	"KHR": "Cambodian riel",
+	"KMF": "Comoro franc",
+	"KPW": "North Korean won",
+	"KRW": "South Korean won",
+	"KWD": "Kuwaiti dinar",
+	"KYD": "Cayman Islands dollar",
+	"KZT": "Kazakhstani tenge",
+	"LAK": "Lao kip",
+	"LBP": "Lebanese pound",
+	"LKR": "Sri Lankan rupee",
+	"LRD": "Liberian dollar",
+	"LSL": "Lesotho loti",
+	"LYD": "Libyan dinar",
+	"MAD": "Moroccan dirham",
+	"MDL": "Moldovan leu",
+	"MGA": "Malagasy ariary",
+	"MKD": "Macedonian denar",
+	"MMK": "Myanmar kyat",
+	"MNT": "Mongolian tögrög",
+	"MOP": "Macanese pataca",
+	"MRU": "Mauritanian ouguiya",
+	"MUR": "Mauritian rupee",
+	"MVR": "Maldivian rufiyaa",
+	"MWK": "Malawian kwacha",
+	"MXN": "Mexican peso",
+	"MXV": "Mexican Unidad de Inversion (UDI) (funds code)",
+	"MYR": "Malaysian ringgit",
+	"MZN": "Mozambican metical",
+	"NAD": "Namibian dollar",
+	"NGN": "Nigerian naira",
+	"NIO": "Nicaraguan córdoba",
+	"NOK": "Norwegian krone",
+	"NPR": "Nepalese rupee",
+	"NZD": "New Zealand dollar",
+	"OMR": "Omani rial",
+	"PAB": "Panamanian balboa",
+	"PEN": "Peruvian sol",
+	"PGK": "Papua New Guinean kina",
+	"PHP": "Philippine peso",
+	"PKR": "Pakistani rupee",
+	"PLN": "Polish złoty",
+	"PYG": "Paraguayan guaraní",
+	"QAR": "Qatari riyal",
+	"RON": "Romanian leu",
+	"RSD": "Serbian dinar",
+	"RUB": "Russian ruble",
+	"RWF": "Rwandan franc",
+	"SAR": "Saudi riyal",
+	"SBD": "Solomon Islands dollar",
+	"SCR": "Seychelles rupee",
+	"SDG": "Sudanese pound",
+	"SEK": "Swedish krona",
+	"SGD": "Singapore dollar",
+	"SHP": "Saint Helena pound",
+	"SLE": "Sierra Leonean leone",
+	"SOS": "Somalian shilling",
+	"SRD": "Surinamese dollar",
+	"SSP": "South Sudanese pound",
+	"STN": "São Tomé and Príncipe dobra",
+	"SVC": "Salvadoran colón",
+	"SYP": "Syrian pound",
+	"SZL": "Swazi lilangeni",
+	"THB": "Thai baht",
+	"TJS": "Tajikistani somoni",
+	"TMT": "Turkmenistan manat",
+	"TND": "Tunisian dinar",
+	"TOP": "Tongan paʻanga",
+	"TRY": "Turkish lira",
+	"TTD": "Trinidad and Tobago dollar",
+	"TWD": "New Taiwan dollar",
+	"TZS": "Tanzanian shilling",
+	"UAH": "Ukrainian hryvnia",
+	"UGX": "Ugandan shilling",
+	"USD": "United States dollar",
+	"USN": "United States dollar (next day)",
+	"UYI": "Uruguay Peso en Unidades Indexadas (URUIURUI)",
+	"UYU": "Uruguayan peso",
+	"UYW": "Unidad previsional",
+	"UZS": "Uzbekistani sum",
+	"VED": "Venezuelan digital bolívar",
+	"VES": "Venezuelan sovereign bolívar",
+	"VND": "Vietnamese đồng",
+	"VUV": "Vanuatu vatu",
+	"WST": "Samoan tala",
+	"XAD": "Arab Accounting Dinar",
+	"XAF": "CFA franc BEAC",
+	"XAG": "Silver (one troy ounce)",
+	"XAU": "Gold (one troy ounce)",
+	"XBA": "European Composite Unit (EURCO)",
+	"XBB": "European Monetary Unit (E.M.U.-6)",
+	"XBC": "European Unit of Account 9 (E.U.A.-9)",
+	"XBD": "European Unit of Account 17 (E.U.A.-17)",
+	"XCD": "East Caribbean dollar",
+	"XCG": "Caribbean guilder",
+	"XDR": "Special drawing rights",
+	"XOF": "CFA franc BCEAO",
+	"XPD": "Palladium (one troy ounce)",
+	"XPF": "CFP franc (franc Pacifique)",
+	"XPT": "Platinum (one troy ounce)",
+	"XSU": "SUCRE",
+	"XTS": "Code reserved for testing",
+	"XUA": "ADB Unit of Account",
+	"XXX": "No currency",
+	"YER": "Yemeni rial",
+	"ZAR": "South African rand",
+	"ZMW": "Zambian kwacha",
+	"ZWG": "Zimbabwe Gold",
 }

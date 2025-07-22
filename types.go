@@ -13,12 +13,16 @@ import (
 */
 
 // String
+// TODO: technically only includes hexadecimal 20 - 7E (ASCII 32 - 126) except
+// for those defined in MSH.2 (applies to ST, TX, FT)
 type ST string
 
 // Text
+// TODO: implement method to limit this to 64kb in length
 type TX string
 
 // Formatted Text
+// TODO: implement method to limit this to 64kb in length
 type FT string
 
 /*
@@ -26,14 +30,14 @@ type FT string
 */
 
 // Numeric
-type NM string
-
 // TODO: implement ToNumeric
+// parse +/-123.792
+type NM string
 
 // Sequence ID (integer)
 type SI string
 
-func (s SI) ToNumeric() int {
+func (s SI) Int() int {
 	i, err := strconv.Atoi(string(s))
 	if err != nil {
 		panic(p.Format("non-numeric value for SI: %v", s))
@@ -48,9 +52,21 @@ type CQ struct {
 }
 
 // Money
+// TODO: MSH.17 country code determines denomination if not provided, so need
+// to handle a cross walk & default if MSH.17 isn't specified (USA -> USD)
 type MO struct {
 	Quantity     NM
-	Denomination ID
+	Denomination ID // ISO 4217
+}
+
+// Composite Price
+type CP struct {
+	Price      MO
+	PriceType  ID // HL7 0205
+	FromValue  NM
+	ToValue    NM
+	RangeUnits CE
+	RangeType  ID // HL7 0298
 }
 
 type comparator string
@@ -64,21 +80,21 @@ const (
 	NE comparator = "<>"
 )
 
+type separator string
+
+const (
+	S separator = "-"
+	A separator = "+"
+	D separator = "/"
+	R separator = ":"
+)
+
 // Structured Numeric
 type SN struct {
 	Comparator comparator
 	FirstNum   NM
 	SecondNum  NM
 	Separator  ST
-}
-
-func (sn *SN) IsValidType() bool {
-	switch comparator(sn.Comparator) {
-	default:
-		return false
-	case GT, LT, GE, LE, EQ, NE:
-		return true
-	}
 }
 
 /*
@@ -95,11 +111,7 @@ type ID string
 type HD struct {
 	NamespaceId     IS
 	UniversalId     ST
-	UniversalIdType ID
-}
-
-func (hd *HD) IsValidType() bool {
-	return UniversalIdTypes.Valid(hd.UniversalIdType)
+	UniversalIdType ID // HL7 0301
 }
 
 // Entity Identifier
@@ -113,8 +125,8 @@ type EI struct {
 type RP struct {
 	Pointer       ST
 	ApplicationId HD
-	DataType      ID
-	DataSubType   ID
+	DataType      ID // HL7 0191
+	DataSubType   ID // HL7 0191
 }
 
 // Person Location
@@ -132,8 +144,8 @@ type PL struct {
 
 // Processing Type
 type PT struct {
-	ProcessingId   ID
-	ProcessingMode ID
+	ProcessingId   ID // HL7 0103
+	ProcessingMode ID // HL7 0207
 }
 
 /*
@@ -160,17 +172,17 @@ type CE struct {
 	Identifier            ST
 	Text                  ST
 	CodingSystem          ST
-	AlternateIdentifier   ID
-	AlternateText         FT
+	AlternateIdentifier   ST
+	AlternateText         ST
 	AlternateCodingSystem ST
 }
 
 // Coded Element with formatted values
 type CF struct {
-	Identifier            ID
+	Identifier            ID // HL7 0203
 	FormattedText         FT
 	CodingSystem          ST
-	AlternateIdentifier   ID
+	AlternateIdentifier   ID // HL7 0203
 	AlternateText         FT
 	AlternateCodingSystem ST
 }
@@ -179,7 +191,7 @@ type CF struct {
 type CK struct {
 	IdNumber             NM
 	CheckDigit           NM
-	CheckDigitSchemeCode ID
+	CheckDigitSchemeCode ID // HL7 0061
 	AssigningAuthority   HD
 }
 
@@ -200,16 +212,10 @@ type CN struct {
 type CX struct {
 	IdNumber             ST
 	CheckDigit           ST
-	CheckDigitSchemeCode ID
+	CheckDigitSchemeCode ID // HL7 0061
 	AssigningAuthority   HD
 	IdentifierTypeCode   IS
 	AssigningFacility    HD
-}
-
-func (cx *CX) IsValidType() bool {
-	return cx.AssigningAuthority.IsValidType() &&
-		cx.AssigningFacility.IsValidType() &&
-		IdentifierTypeCodes.Valid(cx.CheckDigitSchemeCode)
 }
 
 // Extended Composite ID number and name
@@ -223,9 +229,9 @@ type XCN struct {
 	Degree               ST
 	SourceTable          IS
 	AssigningAuthority   HD
-	NameTypeCode         ID
+	NameTypeCode         ID // HL7 0200
 	IdentifierCheckDigit ST
-	CheckDigitSchemeCode ID
+	CheckDigitSchemeCode ID // HL7 0061
 	IdentifierTypeCode   IS
 	AssigningFacility    HD
 }
@@ -244,8 +250,8 @@ type AD struct {
 	City                       ST
 	State                      ST
 	Zip                        ST
-	Country                    ID
-	AddressType                ID
+	Country                    ID // ISO 3166
+	AddressType                ID // HL7 0190
 	OtherGeographicDesignation ST
 }
 
@@ -269,8 +275,8 @@ type XAD struct {
 	City                       ST
 	State                      ST
 	Zip                        ST
-	Country                    ID
-	AddressType                ID
+	Country                    ID // ISO 3166
+	AddressType                ID // HL7 0190
 	OtherGeographicDesignation ST
 	CountyCode                 IS
 	CensusTract                IS
@@ -278,13 +284,14 @@ type XAD struct {
 
 // Extended Person Name
 type XPN struct {
-	FamilyName   ST
-	GivenName    ST
-	MiddleName   ST
-	Suffix       ST
-	Prefix       ST
-	Degree       ST
-	NameTypeCode ID
+	FamilyName             ST
+	GivenName              ST
+	MiddleName             ST
+	Suffix                 ST
+	Prefix                 ST
+	Degree                 ST
+	NameTypeCode           ID // HL7 0200
+	NameRepresentationCode ID // HL7 4000
 }
 
 // Extended Composite Name and ID number for organizations
@@ -293,7 +300,7 @@ type XON struct {
 	TypeCode             IS
 	IdNumber             NM
 	CheckDigit           NM
-	CheckDigitSchemeCode ID
+	CheckDigitSchemeCode ID // HL7 0061
 	AssigningAuthority   HD
 	IdentifierTypeCode   IS
 	AssigningFacility    HD
@@ -301,8 +308,9 @@ type XON struct {
 
 // Extended Telecommunication Number
 type XTN struct {
-	TelecommunicationUseCode ID
-	EquipmentType            ID
+	Number                   TN
+	TelecommunicationUseCode ID // HL7 0201
+	EquipmentType            ID // HL7 0202
 	EmailAddress             ST
 	CountryCode              NM
 	AreaCode                 NM
@@ -315,18 +323,22 @@ type XTN struct {
 	EXTENDED QUERIES
 */
 
+// Query Input Parameter
+// TODO: if this ever comes up, the convention for the field name is such that
+// it begints with '@' (must be escaped if it is being used as a delimiter as
+// specified in the MSH.2 field). Also, the Values field could contain
+// subcomponent values (e.g "value1&value2&value3") or a single value.
+type QIP struct {
+	FieldName ST
+	Values    ST
+}
+
 // Query Selection Criteria
 type QSC struct {
 	FieldName             ST
-	RelationalOperator    ID
+	RelationalOperator    ID // HL7 0209
 	Value                 ST
-	RelationalConjunction ID
-}
-
-// Query Input Parameter
-type QIP struct {
-	FieldName ST
-	Values    []ST // TODO: check this
+	RelationalConjunction ID // HL7 0102
 }
 
 // Row Column Definition
@@ -355,8 +367,8 @@ type JCC struct {
 
 // Visiting hours
 type VH struct {
-	StartDayRange  ID
-	EndDayRange    ID
+	StartDayRange  ID // HL7 0267
+	EndDayRange    ID // HL7 0267
 	StartHourRange TM
 	EndHourRange   TM
 }
@@ -375,9 +387,9 @@ type PPN struct {
 	Degree                  ST
 	SourceTable             IS
 	AssigningAuthority      HD
-	NameTypeCode            ID
+	NameTypeCode            ID // HL7 Table 0200
 	IdentifierCheckDigit    ST
-	CheckDigitSchemeCode    ID
+	CheckDigitSchemeCode    ID // HL7 Table 0061
 	IdentifierTypeCode      IS
 	AssigningFacility       HD
 	DateTimeActionPerformed TS
@@ -394,6 +406,9 @@ type DR struct {
 }
 
 // Repeat Interval
+// TODO: parse TimeInterval as:
+// HHMM,HHMM,HHMM,....
+// Section 4.4.2.2
 type RI struct {
 	RepeatPattern IS
 	TimeInterval  ST
@@ -410,6 +425,7 @@ type duration string
 type sequencing string
 
 // Timing/quantity
+// TODO: Section 4.4
 type TQ struct {
 	Quantity           CQ
 	Interval           interval
@@ -427,9 +443,4 @@ type TQ struct {
 type CM_MSG struct {
 	MessageType  ID
 	TriggerEvent ID
-}
-
-func (cm *CM_MSG) IsValidType() bool {
-	return UniversalIdTypes.Valid(cm.MessageType) &&
-		UniversalIdTypes.Valid(cm.TriggerEvent)
 }
