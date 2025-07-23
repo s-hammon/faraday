@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"strconv"
-	"strings"
+
+	"github.com/s-hammon/p"
 )
 
 // The standard MSH segment
@@ -42,7 +42,7 @@ type MSH struct {
 	AcceptAcknowledgmentType      ID `hl7:"tbl=0155"`
 	ApplicationAcknowledgmentType ID `hl7:"tbl=0155"`
 	CountryCode                   ID
-	CharacterSet                  ID `hl7:"rep=Y3,tbl=0211"`
+	CharacterSet                  ID `hl7:"tbl=0211"`
 	PrincipalLanguage             CE
 }
 
@@ -114,68 +114,24 @@ func (seg *MSH) componentSeparator() []byte {
 	return []byte(seg.EncodingCharacters[:1])
 }
 
-type FieldSpec struct {
-	Position     uint8
-	Typ          reflect.Type
-	Optionality  optionality
-	Repeats      bool
-	RepeatCount  uint8
-	ControlTable *ControlTable
-}
+func (seg *MSH) GetSpec() SegmentSpec {
+	segmentSpec := make(SegmentSpec)
+	v := reflect.ValueOf(seg).Elem()
+	t := v.Type()
 
-// Creates a new FieldSpec with default values
-func NewFieldSpec(pos uint8, typ reflect.Type) *FieldSpec {
-	return &FieldSpec{
-		Position:     pos,
-		Typ:          typ,
-		Optionality:  Optional,
-		Repeats:      false,
-		RepeatCount:  0,
-		ControlTable: nil,
-	}
-}
-
-// TODO: rework this a bit to support logging for whenever tag key was found,
-// but could not parse the value (or it is not supported)
-func (spec *FieldSpec) ParseTag(tag string) *FieldSpec {
-	for pair := range strings.SplitSeq(tag, ",") {
-		parts := strings.SplitN(pair, "=", 2)
-		if len(parts) == 2 {
-			updateSpec(spec, parts...)
+	for i := range v.NumField() {
+		spec := NewFieldSpec(uint8(i+1), t.Field(i).Type)
+		tag := t.Field(i).Tag.Get("hl7")
+		if tag != "" {
+			spec.ParseTag(tag)
 		}
-	}
-	return spec
-}
-
-func updateSpec(spec *FieldSpec, parts ...string) {
-	if parts[1] == "" {
-		return
-	}
-
-	switch parts[0] {
-	default:
-		return
-	case "pos":
-		n, err := strconv.Atoi(parts[1])
-		if err != nil || !canInt8(n) {
-			return
+		fVal := v.Field(i)
+		if !fVal.IsZero() {
+			// TODO: add validattion logic
 		}
-		spec.Position = uint8(n)
-	case "opt":
-		spec.Optionality = fromString(parts[1])
-	case "rep":
-		spec.Repeats = parts[1][:1] == "Y"
-		if len(parts[1]) > 1 {
-			n, err := strconv.Atoi(parts[1][1:])
-			if err != nil || !canInt8(n) {
-				spec.RepeatCount = 1
-			} else {
-				spec.RepeatCount = uint8(n)
-			}
-		}
-	case "tbl":
-		spec.ControlTable = TableMap[parts[1]]
+		segmentSpec[p.Format("MSH.%d", i)] = spec
 	}
+	return SegmentSpec{}
 }
 
 func partsSafe(parts [][]byte, i int) string {
