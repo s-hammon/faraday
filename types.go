@@ -237,7 +237,10 @@ type XCN struct {
 }
 
 // Composite -- apparently they aren't allowed
-type CM struct{}
+type CM struct {
+	Type  ID // HL7 0076
+	Event ID // HL7 0003
+}
 
 /*
 	DEMOGRAPHICS

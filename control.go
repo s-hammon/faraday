@@ -1,5 +1,13 @@
 package main
 
+import (
+	"bytes"
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+)
+
 // The standard MSH segment
 /*
 A struct field = a segment field, and we've defined a Go type for each HL7
@@ -36,4 +44,143 @@ type MSH struct {
 	CountryCode                   ID
 	CharacterSet                  ID `hl7:"rep=Y3,tbl=0211"`
 	PrincipalLanguage             CE
+}
+
+func (seg *MSH) UnmarshalHL7(b []byte) error {
+	if len(b) < 6 {
+		return fmt.Errorf("input '%s' too short--must be at least 6 bytes.", string(b))
+	}
+	seg.FieldSeparator = ST(b[:1])
+	seg.EncodingCharacters = ST(b[1:5])
+
+	v := reflect.ValueOf(seg).Elem()
+	t := v.Type()
+
+	fields := bytes.Split(b[6:], seg.fieldSeparator())
+	for i, j := 0, 2; i < len(fields) && j < v.NumField(); i, j = i+1, j+1 {
+		fVal := v.Field(j)
+		fTyp := t.Field(j).Type
+
+		raw := fields[i]
+		switch fTyp {
+		case reflect.TypeOf(ST("")):
+			fVal.SetString(string(raw))
+		case reflect.TypeOf(HD{}):
+			parts := bytes.Split(raw, seg.componentSeparator())
+			fVal.Set(reflect.ValueOf(HD{
+				NamespaceId:     IS(partsSafe(parts, 0)),
+				UniversalId:     ST(partsSafe(parts, 1)),
+				UniversalIdType: ID(partsSafe(parts, 2)),
+			}))
+		case reflect.TypeOf(TS("")):
+			fVal.Set(reflect.ValueOf(TS(raw)))
+		case reflect.TypeOf(ID("")):
+			fVal.Set(reflect.ValueOf(ID(raw)))
+		case reflect.TypeOf(NM("")):
+			fVal.Set(reflect.ValueOf(NM(raw)))
+		case reflect.TypeOf(CE{}):
+			parts := bytes.Split(raw, seg.componentSeparator())
+			fVal.Set(reflect.ValueOf(CE{
+				Identifier:            ST(partsSafe(parts, 0)),
+				Text:                  ST(partsSafe(parts, 1)),
+				CodingSystem:          ST(partsSafe(parts, 2)),
+				AlternateIdentifier:   ST(partsSafe(parts, 3)),
+				AlternateText:         ST(partsSafe(parts, 4)),
+				AlternateCodingSystem: ST(partsSafe(parts, 5)),
+			}))
+		case reflect.TypeOf(CM{}):
+			parts := bytes.Split(raw, seg.componentSeparator())
+			fVal.Set(reflect.ValueOf(CM{
+				Type:  ID(partsSafe(parts, 0)),
+				Event: ID(partsSafe(parts, 1)),
+			}))
+		case reflect.TypeOf(PT{}):
+			parts := bytes.Split(raw, seg.componentSeparator())
+			fVal.Set(reflect.ValueOf(PT{
+				ProcessingId:   ID(partsSafe(parts, 0)),
+				ProcessingMode: ID(partsSafe(parts, 1)),
+			}))
+		default:
+		}
+	}
+	return nil
+}
+
+func (seg *MSH) fieldSeparator() []byte {
+	return []byte(seg.FieldSeparator)
+}
+
+func (seg *MSH) componentSeparator() []byte {
+	return []byte(seg.EncodingCharacters[:1])
+}
+
+type FieldSpec struct {
+	Position     uint8
+	Typ          reflect.Type
+	Optionality  optionality
+	Repeats      bool
+	RepeatCount  uint8
+	ControlTable *ControlTable
+}
+
+// Creates a new FieldSpec with default values
+func NewFieldSpec(pos uint8, typ reflect.Type) *FieldSpec {
+	return &FieldSpec{
+		Position:     pos,
+		Typ:          typ,
+		Optionality:  Optional,
+		Repeats:      false,
+		RepeatCount:  0,
+		ControlTable: nil,
+	}
+}
+
+// TODO: rework this a bit to support logging for whenever tag key was found,
+// but could not parse the value (or it is not supported)
+func (spec *FieldSpec) ParseTag(tag string) *FieldSpec {
+	for pair := range strings.SplitSeq(tag, ",") {
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) == 2 {
+			updateSpec(spec, parts...)
+		}
+	}
+	return spec
+}
+
+func updateSpec(spec *FieldSpec, parts ...string) {
+	if parts[1] == "" {
+		return
+	}
+
+	switch parts[0] {
+	default:
+		return
+	case "pos":
+		n, err := strconv.Atoi(parts[1])
+		if err != nil || !canInt8(n) {
+			return
+		}
+		spec.Position = uint8(n)
+	case "opt":
+		spec.Optionality = fromString(parts[1])
+	case "rep":
+		spec.Repeats = parts[1][:1] == "Y"
+		if len(parts[1]) > 1 {
+			n, err := strconv.Atoi(parts[1][1:])
+			if err != nil || !canInt8(n) {
+				spec.RepeatCount = 1
+			} else {
+				spec.RepeatCount = uint8(n)
+			}
+		}
+	case "tbl":
+		spec.ControlTable = TableMap[parts[1]]
+	}
+}
+
+func partsSafe(parts [][]byte, i int) string {
+	if i < len(parts) {
+		return string(parts[i])
+	}
+	return ""
 }
