@@ -1,11 +1,12 @@
+/*
+This module contains the standard for control messages (MSH, ACK, MSA, etc).
+*/
 package main
 
 import (
 	"bytes"
 	"fmt"
 	"reflect"
-
-	"github.com/s-hammon/p"
 )
 
 // The standard MSH segment
@@ -33,16 +34,16 @@ type MSH struct {
 	ReceivingFacility             HD
 	DateTime                      TS
 	Security                      ST
-	MessageType                   CM `hl7:"opt=R"`
-	MessageControlId              ST `hl7:"opt=R"`
-	ProcessingId                  PT `hl7:"opt=R"`
-	VersionId                     ID `hl7:"opt=R,tbl=0104"`
+	MessageType                   CM_MSG `hl7:"opt=R"`
+	MessageControlId              ST     `hl7:"opt=R"`
+	ProcessingId                  PT     `hl7:"opt=R"`
+	VersionId                     ID     `hl7:"opt=R,tbl=0104"`
 	SequenceNumber                NM
 	ContinuationPointer           ST
 	AcceptAcknowledgmentType      ID `hl7:"tbl=0155"`
 	ApplicationAcknowledgmentType ID `hl7:"tbl=0155"`
 	CountryCode                   ID
-	CharacterSet                  ID `hl7:"tbl=0211"`
+	CharacterSet                  ID `hl7:"rep=Y3,tbl=0211"`
 	PrincipalLanguage             CE
 }
 
@@ -88,9 +89,9 @@ func (seg *MSH) UnmarshalHL7(b []byte) error {
 				AlternateText:         ST(partsSafe(parts, 4)),
 				AlternateCodingSystem: ST(partsSafe(parts, 5)),
 			}))
-		case reflect.TypeOf(CM{}):
+		case reflect.TypeOf(CM_MSG{}):
 			parts := bytes.Split(raw, seg.componentSeparator())
-			fVal.Set(reflect.ValueOf(CM{
+			fVal.Set(reflect.ValueOf(CM_MSG{
 				Type:  ID(partsSafe(parts, 0)),
 				Event: ID(partsSafe(parts, 1)),
 			}))
@@ -114,29 +115,16 @@ func (seg *MSH) componentSeparator() []byte {
 	return []byte(seg.EncodingCharacters[:1])
 }
 
-func (seg *MSH) GetSpec() SegmentSpec {
-	segmentSpec := make(SegmentSpec)
-	v := reflect.ValueOf(seg).Elem()
-	t := v.Type()
-
-	for i := range v.NumField() {
-		spec := NewFieldSpec(uint8(i+1), t.Field(i).Type)
-		tag := t.Field(i).Tag.Get("hl7")
-		if tag != "" {
-			spec.ParseTag(tag)
-		}
-		fVal := v.Field(i)
-		if !fVal.IsZero() {
-			// TODO: add validattion logic
-		}
-		segmentSpec[p.Format("MSH.%d", i)] = spec
-	}
-	return SegmentSpec{}
-}
-
 func partsSafe(parts [][]byte, i int) string {
 	if i < len(parts) {
 		return string(parts[i])
 	}
 	return ""
+}
+
+// The standard NTE segment
+type NTE struct {
+	SetId           SI
+	SourceOfComment ID
+	Comment         FT `hl7:"rep=Y"`
 }

@@ -23,10 +23,11 @@ type FieldSpec struct {
 }
 
 // Creates a new FieldSpec with default values
-func NewFieldSpec(pos uint8, typ reflect.Type) *FieldSpec {
+func NewFieldSpec(pos uint8, val reflect.Value) *FieldSpec {
 	return &FieldSpec{
 		Position:     pos,
-		Typ:          typ,
+		Typ:          val.Type(),
+		Val:          val,
 		Optionality:  Optional,
 		Repeats:      false,
 		RepeatCount:  0,
@@ -46,8 +47,44 @@ func (spec *FieldSpec) ParseTag(tag string) *FieldSpec {
 	return spec
 }
 
-func (spec *FieldSpec) validate(v []byte, delimiters []byte) {
-	if len(v) == 0 && spec.Optionality == Required {
+func (spec *FieldSpec) parse(field, delimiters []byte) error {
+	switch spec.Val.Kind() {
+	default:
+		return fmt.Errorf("unsupported field type: %s", spec.Val.Kind().String())
+	case reflect.String:
+		spec.Val.SetString(string(field))
+	case reflect.Struct:
+		components := bytes.Split(field, delimiters[1:2])
+		for i := range min(spec.Val.NumField(), len(components)) {
+			if len(components[i]) == 0 {
+				continue
+			}
+			fVal := spec.Val.Field(i)
+			switch fVal.Kind() {
+			case reflect.String:
+				fVal.SetString(string(components[i]))
+			case reflect.Struct:
+				subcomponents := bytes.Split(components[i], delimiters[4:])
+				for j := range min(fVal.NumField(), len(subcomponents)) {
+					cVal := fVal.Field(j)
+					if cVal.Kind() == reflect.Struct {
+						for k := range min(cVal.NumField(), len(subcomponents)) {
+							// at this point, everything should be string
+							sVal := cVal.Field(k)
+							sVal.SetString(string(subcomponents[k]))
+						}
+					} else {
+						cVal.SetString(string(subcomponents[j]))
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (spec *FieldSpec) validate(data []byte, delimiters []byte) {
+	if len(data) == 0 && spec.Optionality == Required {
 		spec.validationErr = fmt.Errorf("no data provided for required field at position %d", spec.Position)
 		return
 	}
@@ -55,7 +92,7 @@ func (spec *FieldSpec) validate(v []byte, delimiters []byte) {
 	val := reflect.New(spec.Typ).Elem()
 	if val.Kind() == reflect.Struct {
 		i := 0
-		for component := range bytes.SplitSeq(v, delimiters[:1]) {
+		for component := range bytes.SplitSeq(data, delimiters[:1]) {
 			if i >= val.NumField() {
 				i++
 				break
@@ -81,7 +118,7 @@ func (spec *FieldSpec) validate(v []byte, delimiters []byte) {
 			spec.validationErr = fmt.Errorf("expected max %d components for field number %d", val.NumField(), spec.Position)
 		}
 	} else if val.Kind() == reflect.String {
-		val.SetString(string(v))
+		val.SetString(string(data))
 	}
 	if !p.IsZero(val) {
 		spec.Val = val

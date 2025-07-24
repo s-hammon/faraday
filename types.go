@@ -236,10 +236,107 @@ type XCN struct {
 	AssigningFacility    HD
 }
 
-// Composite -- apparently they aren't allowed
-type CM struct {
+/*
+	COMPOSITES
+*/
+// NOTE: these are defined on a per segment/field basis.
+// In the spec, a lot of fields define a "CM" type, but in practice each of
+// could be unique.
+
+// Message Type (MSH.9)
+type CM_MSG struct {
 	Type  ID // HL7 0076
 	Event ID // HL7 0003
+}
+
+// Discharged to Location (PV1)
+type CM_DSL struct {
+	Location      IS
+	EffectiveDate TS
+}
+
+// Authorization Information (IN1.14)
+type CM_AUI struct {
+	AuthorizationNumber ST
+	Date                DT
+	Source              ST
+}
+
+// Room Coverage Type & Policy Type (IN2.28, INS2.29)
+type CM_PLT struct {
+	RoomType       IS
+	AmountType     IS
+	CoverageAmount NM
+}
+
+// Daily Deductible (IN2.30)
+type CM_DDE struct {
+	DelayDays NM
+	Amount    NM
+	DayCount  NM
+}
+
+// Value Amount (IN3.5, IN3.11, UB1.10)
+type CM_VAL struct {
+	Type   IS
+	Amount NM
+}
+
+// Pre-certification req/window (IN3.20)
+type CM_PCR struct {
+	PatientType IS
+	Required    ID
+	Window      TS
+}
+
+// Occurrence code & Date (UB2.7)
+type CM_OCD struct {
+	Code CE
+	Date DT
+}
+
+// Parent Order (ORC.8)
+type CM_POR struct {
+	PlacerOrderNumber EI
+	FillerOrderNumber EI
+}
+
+// Specimen Source (OBR.15)
+type CM_SPE struct {
+	Name                         CE
+	Additives                    TX
+	Freetext                     TX
+	BodySite                     CE
+	SiteModifier                 CE
+	CollectionMethodModifierCode CE
+}
+
+// Charge to practice (OBR.23)
+type CM_CHP struct {
+	DollarAmount MO
+	ChargeCOde   CE
+}
+
+// Parent result (OBR.26)
+type CM_PRE struct {
+	ObservationIdentifier CE
+	SubId                 ST
+	ObservationResult     TX
+}
+
+// Observation Staff (OBR.32 - OBR.35)
+type CM_OBS struct {
+	Name                CN
+	StartDateTime       TS
+	EndDateTime         TS
+	PointOfCare         IS
+	Room                IS
+	Bed                 IS
+	Facility            HD
+	LocationStatus      IS
+	PatientLocationType IS
+	Building            IS
+	Floor               IS
 }
 
 /*
@@ -368,6 +465,12 @@ type JCC struct {
 	JobClass IS
 }
 
+// Financial Class
+type FC struct {
+	FinancialClass IS
+	EffectiveDate  TS
+}
+
 // Visiting hours
 type VH struct {
 	StartDayRange  ID // HL7 0267
@@ -440,10 +543,4 @@ type TQ struct {
 	Text               TX
 	Conjunction        ID
 	OrderingSequencing sequencing
-}
-
-// Message Type
-type CM_MSG struct {
-	MessageType  ID
-	TriggerEvent ID
 }
