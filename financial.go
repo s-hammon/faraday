@@ -2,7 +2,7 @@
 This module contains the standard for segments found in financial management
 messages.
 */
-package main
+package faraday
 
 // The standard GT1 segment
 type GT1 struct {

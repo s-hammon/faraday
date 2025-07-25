@@ -1,4 +1,4 @@
-package main
+package faraday
 
 // HL7- and ISO-defined tables.
 // Note that this does not include user-defined tables.

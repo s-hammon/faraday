@@ -1,4 +1,4 @@
-package main
+package faraday
 
 type optionality uint8
 

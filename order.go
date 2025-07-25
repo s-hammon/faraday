@@ -1,7 +1,7 @@
 /*
 This module contains the standard for segments found in order entry messages.
 */
-package main
+package faraday
 
 // The standard ORC segment
 type ORC struct {

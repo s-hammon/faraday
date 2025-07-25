@@ -1,7 +1,7 @@
 /*
 This module contains the standard for control messages (MSH, ACK, MSA, etc).
 */
-package main
+package faraday
 
 import (
 	"bytes"

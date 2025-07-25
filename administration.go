@@ -2,7 +2,7 @@
 This module contains the standard for patient administration messages.
 Primarly, ADTs.
 */
-package main
+package faraday
 
 // The standard EVN segment
 type EVN struct {

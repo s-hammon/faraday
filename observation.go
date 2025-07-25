@@ -2,7 +2,7 @@
 This module contains the standard for order entry messages.
 Primarily, ORUs.
 */
-package main
+package faraday
 
 /*
 FT (as well as ST) is the most permissible data type, so we will just use it
