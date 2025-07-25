@@ -7,6 +7,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestDecoder_MultipleOBX(t *testing.T) {
+	raw := []byte(
+		"MSH|^~\\&|LabSys|MainLab|EHR|Hospital|20250724000008||ORU^R01|MSGID123|P|2.3\r" +
+			"PID|1||123456||DOE^JOHN\r" +
+			"ORC|RE|999|||\r" +
+			"OBR|1|999|ABC|CBC^Complete Blood Count\r" +
+			"OBX|1|ST|WBC^White Blood Cells||5.4|10^9/L\r" +
+			"OBX|2|ST|HGB^Hemoglobin||13.7|g/dL\r")
+
+	var msg struct {
+		MSH    MSH
+		PID    PID
+		Orders []Order `hl7:"ORC"`
+	}
+
+	err := NewDecoder(bytes.NewReader(raw)).Decode(&msg)
+	require.NoError(t, err)
+	require.Len(t, msg.Orders, 1)
+
+	order := msg.Orders[0]
+	require.Equal(t, ST("999"), order.ORC.PlacerOrderNumber.EntityIdentifier)
+	require.Equal(t, CE{Identifier: "CBC", Text: "Complete Blood Count"}, order.OBR.UniversalServiceID)
+
+	require.Len(t, order.OBX, 2)
+	require.Equal(t, CE{Identifier: "WBC", Text: "White Blood Cells"}, order.OBX[0].ObservationIdentifier)
+	require.Equal(t, FT("5.4"), order.OBX[0].ObservationValue)
+
+	require.Equal(t, CE{Identifier: "HGB", Text: "Hemoglobin"}, order.OBX[1].ObservationIdentifier)
+	require.Equal(t, FT("13.7"), order.OBX[1].ObservationValue)
+}
+
 func TestDecoder_MultipleORC(t *testing.T) {
 	raw := []byte("MSH|^~\\&|SendingApp|SendingFac|ReceivingApp||20250724000008||ORM^O01|MSG00004|T|2.3\r" +
 		"PID|1||123456||DOE^JOHN\r" +
@@ -16,20 +47,16 @@ func TestDecoder_MultipleORC(t *testing.T) {
 		"OBR|2|124|457|CT2^CT Abdomen\r")
 
 	var msg struct {
-		MSH MSH
-		PID PID
-		ORC []ORC
-		OBR []OBR
+		MSH    MSH
+		PID    PID
+		Orders []Order `hl7:"ORC"`
 	}
 
 	err := NewDecoder(bytes.NewReader(raw)).Decode(&msg)
 	require.NoError(t, err)
-	require.Len(t, msg.ORC, 2)
-	require.Len(t, msg.OBR, 2)
-	require.Equal(t, ST("123"), msg.ORC[0].PlacerOrderNumber.EntityIdentifier)
-	require.Equal(t, ST("124"), msg.ORC[1].PlacerOrderNumber.EntityIdentifier)
-	require.Equal(t, ST("CT1"), msg.OBR[0].UniversalServiceID.Identifier)
-	require.Equal(t, ST("CT2"), msg.OBR[1].UniversalServiceID.Identifier)
+	require.Len(t, msg.Orders, 2)
+	require.Equal(t, ID("RE"), msg.Orders[0].ORC.OrderControl)
+	require.Equal(t, SI("2"), msg.Orders[1].OBR.SetId)
 }
 
 func TestDecoder_ORM(t *testing.T) {
@@ -159,4 +186,43 @@ func TestDecoder_ADT(t *testing.T) {
 		},
 		adt.PV1,
 	)
+}
+
+func BenchmarkDecoder_LargeORU(b *testing.B) {
+	raw := []byte(
+		"MSH|^~\\&|LIS|LabDept|EHR|MainHospital|20250724121200||ORU^R01|MSG123456|P|2.3\r" +
+			"PID|1||12345678^^^MRN||Smith^Jane^A||19751225|F|||123 Main St^^Metropolis^NY^10001\r" +
+			"PV1|1|O|AMB^101^1^Clinic||||1234^Primary^Care|||||||||||1234567\r" +
+			"ORC|RE|ORD123456|||\r" +
+			"OBR|1|ORD123456|LAB123456|80048^Basic Metabolic Panel^L||20250724120000|||||||1234^Primary^Care|||||F\r" +
+			"OBX|1|NM|2345-7^Glucose^LN||98|mg/dL|70-99|N|||F\r" +
+			"OBX|2|NM|3094-0^Urea Nitrogen (BUN)^LN||15|mg/dL|7-20|N|||F\r" +
+			"OBX|3|NM|2951-2^Sodium^LN||139|mmol/L|135-145|N|||F\r" +
+			"OBX|4|NM|2823-3^Potassium^LN||4.1|mmol/L|3.5-5.1|N|||F\r" +
+			"OBX|5|NM|2075-0^Chloride^LN||102|mmol/L|98-107|N|||F\r" +
+			"OBX|6|NM|2028-9^Calcium^LN||9.3|mg/dL|8.5-10.5|N|||F\r" +
+			"OBX|7|NM|2160-0^Creatinine^LN||0.9|mg/dL|0.6-1.3|N|||F\r" +
+			"OBX|8|NM|1863-0^eGFR^LN||90|mL/min/1.73m2|>=60|N|||F\r" +
+			"NTE|1||Patient hydrated; levels normal.\r" +
+			"OBX|9|NM|2093-3^Cholesterol, Total^LN||182|mg/dL|<200|N|||F\r" +
+			"OBX|10|NM|2571-8^HDL Cholesterol^LN||52|mg/dL|>=40|N|||F\r" +
+			"OBX|11|NM|2089-1^LDL Cholesterol^LN||110|mg/dL|<130|N|||F\r" +
+			"OBX|12|NM|3043-7^Triglycerides^LN||140|mg/dL|<150|N|||F\r" +
+			"NTE|2||Mildly elevated triglycerides, recommend follow-up.\r")
+
+	type Message struct {
+		MSH    MSH
+		PID    PID
+		PV1    PV1
+		Orders []Order `hl7:"ORC"`
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		var msg Message
+		dec := NewDecoder(bytes.NewReader(raw))
+		if err := dec.Decode(&msg); err != nil {
+			b.Fatalf("Decode failed: %v", err)
+		}
+	}
 }

@@ -72,3 +72,11 @@ type OBR struct {
 	EscortRequired                     ID
 	PlannedPatientTransportComment     CE `hl7:"rep=Y"`
 }
+
+// An Order Group--contains an ORC, optionally followed by an OBR and then
+// pootentially many OBX, NTE, etc
+type Order struct {
+	ORC ORC
+	OBR OBR
+	OBX []OBX
+}

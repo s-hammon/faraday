@@ -49,6 +49,14 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 func (dec *Decoder) Decode(val any) error {
+	var (
+		groupFieldIdx int
+		groupType     reflect.Type
+		groupSchema   map[string]int
+		activeGroup   reflect.Value
+		hasGroup      bool
+	)
+
 	v := reflect.ValueOf(val)
 	if v.Kind() != reflect.Pointer || v.IsNil() {
 		return fmt.Errorf("Decode: expected non-nil pointer, got %T", val)
@@ -65,6 +73,19 @@ func (dec *Decoder) Decode(val any) error {
 		field := elem.Type().Field(i)
 		if name := exportSegmentName(field); name != "" {
 			dec.segmentSchema[name] = i
+
+			if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
+				groupFieldIdx = i
+				groupType = field.Type.Elem()
+				groupSchema = make(map[string]int)
+				for j := range groupType.NumField() {
+					sf := groupType.Field(j)
+					if seg := exportSegmentName(sf); seg != "" {
+						groupSchema[seg] = j
+					}
+				}
+				hasGroup = true
+			}
 		}
 	}
 
@@ -105,47 +126,84 @@ func (dec *Decoder) Decode(val any) error {
 		field.Set(ptr.Elem())
 	}
 
+	var groupSlice reflect.Value
+	if hasGroup {
+		groupSlice = reflect.MakeSlice(elem.Field(groupFieldIdx).Type(), 0, 0)
+	}
+
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		if len(data) < 3 {
-			if len(data) == 0 {
-				break
+			continue
+		}
+		name := string(data[:3])
+
+		if hasGroup {
+			_, isGroupSeg := groupSchema[name]
+			if isGroupSeg {
+				if name == exportSegmentName(groupType.Field(0)) && activeGroup.IsValid() {
+					groupSlice = reflect.Append(groupSlice, activeGroup)
+					activeGroup = reflect.Value{}
+				}
+				if !activeGroup.IsValid() {
+					activeGroup = reflect.New(groupType).Elem()
+				}
+				idx := groupSchema[name]
+				if err := decodeSegmentInto(activeGroup.Field(idx), groupType.Field(idx), data[4:], dec.delims); err != nil {
+					return fmt.Errorf("decode group %s: %w", name, err)
+				}
+				continue
 			}
-			return fmt.Errorf("malformed segment: %q", data)
+
+			if activeGroup.IsValid() {
+				groupSlice = reflect.Append(groupSlice, activeGroup)
+				activeGroup = reflect.Value{}
+			}
 		}
 
-		name := string(data[:3])
 		idx, ok := dec.segmentSchema[name]
 		if !ok {
 			continue
 		}
 
 		field := elem.Field(idx)
-		isSlice := field.Kind() == reflect.Slice
-		typ := field.Type()
-		if isSlice {
-			typ = typ.Elem()
+		if err := decodeSegmentInto(field, elem.Type().Field(idx), data[4:], dec.delims); err != nil {
+			return fmt.Errorf("decode top-level %s: %w", name, err)
 		}
+	}
+	if hasGroup && activeGroup.IsValid() {
+		groupSlice = reflect.Append(groupSlice, activeGroup)
+	}
+	if hasGroup {
+		elem.Field(groupFieldIdx).Set(groupSlice)
+	}
+	return nil
+}
 
-		segVal := reflect.New(typ).Elem()
-		rawFields := bytes.Split(data[4:], []byte{dec.delims.field})
-		for i := range min(segVal.NumField(), len(rawFields)) {
-			structField := segVal.Type().Field(i)
-			fVal := segVal.Field(i)
+func decodeSegmentInto(field reflect.Value, sf reflect.StructField, raw []byte, delims delimiters) error {
+	isSlice := field.Kind() == reflect.Slice
+	typ := field.Type()
+	if isSlice {
+		typ = typ.Elem()
+	}
 
-			spec := NewFieldSpec(uint8(i+1), fVal)
-			spec.ParseTag(structField.Tag.Get("hl7"))
-			if err := spec.parse(rawFields[spec.Position-1], dec.delims.toSlice()); err != nil {
-				return fmt.Errorf("%s field %d: %w", name, i+1, err)
-			}
-			fVal.Set(spec.Val)
+	segVal := reflect.New(typ).Elem()
+	rawFields := bytes.Split(raw, []byte{delims.field})
+
+	for i := range min(segVal.NumField(), len(rawFields)) {
+		fVal := segVal.Field(i)
+		spec := NewFieldSpec(uint8(i+1), fVal)
+		spec.ParseTag(segVal.Type().Field(i).Tag.Get("hl7"))
+		if err := spec.parse(rawFields[i], delims.toSlice()); err != nil {
+			return err
 		}
+		fVal.Set(spec.Val)
+	}
 
-		if isSlice {
-			field.Set(reflect.Append(field, segVal))
-		} else {
-			field.Set(segVal)
-		}
+	if isSlice {
+		field.Set(reflect.Append(field, segVal))
+	} else {
+		field.Set(segVal)
 	}
 	return nil
 }
