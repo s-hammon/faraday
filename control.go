@@ -47,7 +47,7 @@ type MSH struct {
 	PrincipalLanguage             CE
 }
 
-func (seg *MSH) UnmarshalHL7(b []byte) error {
+func (seg *MSH) UnmarshalHeader(b []byte) error {
 	if len(b) < 6 {
 		return fmt.Errorf("input '%s' too short--must be at least 6 bytes.", string(b))
 	}

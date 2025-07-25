@@ -54,7 +54,7 @@ func (spec *FieldSpec) parse(field, delimiters []byte) error {
 	case reflect.String:
 		spec.Val.SetString(string(field))
 	case reflect.Struct:
-		components := bytes.Split(field, delimiters[1:2])
+		components := bytes.Split(field, delimiters[:1])
 		for i := range min(spec.Val.NumField(), len(components)) {
 			if len(components[i]) == 0 {
 				continue
@@ -64,7 +64,7 @@ func (spec *FieldSpec) parse(field, delimiters []byte) error {
 			case reflect.String:
 				fVal.SetString(string(components[i]))
 			case reflect.Struct:
-				subcomponents := bytes.Split(components[i], delimiters[4:])
+				subcomponents := bytes.Split(components[i], delimiters[3:])
 				for j := range min(fVal.NumField(), len(subcomponents)) {
 					cVal := fVal.Field(j)
 					if cVal.Kind() == reflect.Struct {

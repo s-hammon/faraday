@@ -10,7 +10,7 @@ func TestMSHUnmarshalHL7_Basic(t *testing.T) {
 	raw := []byte("MSH|^~\\&|SendingApp|SendingFac|ReceivingApp|ReceivingFac|202507231230||ADT^A01|MSG00001|P|2.5|||||USA|ASCII")
 
 	var msh MSH
-	err := msh.UnmarshalHL7(raw[3:])
+	err := msh.UnmarshalHeader(raw[3:])
 	require.NoError(t, err)
 	require.Equal(t, "|", string(msh.FieldSeparator))
 	require.Equal(t, "^~\\&", string(msh.EncodingCharacters))

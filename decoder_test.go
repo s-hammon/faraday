@@ -7,6 +7,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestDecoder_MultipleORC(t *testing.T) {
+	raw := []byte("MSH|^~\\&|SendingApp|SendingFac|ReceivingApp||20250724000008||ORM^O01|MSG00004|T|2.3\r" +
+		"PID|1||123456||DOE^JOHN\r" +
+		"ORC|RE|123|||\r" +
+		"OBR|1|123|456|CT1^CT Head\r" +
+		"ORC|NW|124|||\r" +
+		"OBR|2|124|457|CT2^CT Abdomen\r")
+
+	var msg struct {
+		MSH MSH
+		PID PID
+		ORC []ORC
+		OBR []OBR
+	}
+
+	err := NewDecoder(bytes.NewReader(raw)).Decode(&msg)
+	require.NoError(t, err)
+	require.Len(t, msg.ORC, 2)
+	require.Len(t, msg.OBR, 2)
+	require.Equal(t, ST("123"), msg.ORC[0].PlacerOrderNumber.EntityIdentifier)
+	require.Equal(t, ST("124"), msg.ORC[1].PlacerOrderNumber.EntityIdentifier)
+	require.Equal(t, ST("CT1"), msg.OBR[0].UniversalServiceID.Identifier)
+	require.Equal(t, ST("CT2"), msg.OBR[1].UniversalServiceID.Identifier)
+}
+
 func TestDecoder_ORM(t *testing.T) {
 	raw := []byte("MSH|^~\\&|SendingApp|SendingFac|ReceivingApp||20250724000008||ORM^O01|MSG00003|T|2.3\rPID|1|W01536038|W02813944^2^6^^^S||DOE^JANE||19950101|F||W^White/Caucasian|123 MAIN ST^^ANYWHERE^TX^12345^USA||(123)456-7890^PRN|(999)999-9999^WPN|||NON^None|W182253636||||||||||||N\rPV1|1|E|^AER^^^^^^^Acme ER||||735360^Graham^Joshua^M^^^M.D.^^NPI&1234567890||||||||U|||E|W182253636|||||||||||||||||||||||||20250723214200\rGT1|1||DOE^JANE||123 MAIN ST^^ANYWHERE^TX^12345^USA|||19950101|||SELF^Self\rAL1|1||06004977^Penicillin G^penicillin G^^^penicillin G\rORC|XO|003953316|30120800||SC||^^^20250723221330||20250724000009|^Decrad^Support^^^^System.||735360^Graham^Joshua^M^^^M.D.^^NPI&1234567890|AERC^Acme ER Center||||||IDX\rOBR|1|003953316|30120800|XABDP1^CT Abdomen/Pelvis w/IV Cont^XABDP1^CT Abdomen/Pelvis w/IV Cont|Y^N||||||||SEVERE UPPER ABDOMINAL PAIN    DX:  ABDOMINAL PAIN    Comments: BARIATRIC PROTOCOL PLEASE|||735360^Graham^Joshua^M^^^M.D.^^NPI&1234567890||003953316||GRAJOS|MPE4660|||CT|C||^^15^20250723221330^^S^Stat|||A||||||20250723221500|||45893^^321 Niam St^Suite 404^Anywhere^TX^12345^321-654-0987^NORPT^(10/22dm)Meditech Orders^000-000-0000||0|0||||ISO300&Isovue - 300^GASTRO&Gastrografin - Iodinated Oral Contrast~5A90529^00600014~~~~100^60~&Farkas&Julie&&&&Technologist^&Farkas&Julie&&&&Technologist~07/23/2025 23:45:00^07/23/2025 23:15:00~002&Intravenous^001&Oral~ACTIVE^ACTIVE~A^A~CONTRAST^CONTRAST~~CC&cc^CC&cc|~~~~27.83~1733.80~~CTHABITUS\rNTE|1||BARIATRIC PROTOCOL PLEASE")
 
