@@ -315,3 +315,22 @@ type DRG struct {
 	OutlierReimbursement   CP
 	ConfidentialIndicator  ID
 }
+
+// The standard PR1 segment
+type PR1 struct {
+	SetId                   SI `hl7:"opt=R"`
+	CodingMethod            IS `hl7:"opt=B"`
+	Code                    CE `hl7:"opt=R"`
+	Description             ST `hl7:"opt=B"`
+	DateTime                TS `hl7:"opt=R"`
+	FunctionalType          IS `hl7:"opt=R"`
+	Minutes                 NM
+	Anesthesiologist        XCN `hl7:"opt=B,rep=Y"`
+	AnesthesiaCode          IS
+	AnesthesiaMinutes       NM
+	Surgeon                 XCN `hl7:"opt=B,rep=Y"`
+	Practitioner            XCN `hl7:"opt=B,rep=Y"`
+	ConsentCode             CE
+	Priority                NM
+	AssociatedDiagnosisCode CE
+}

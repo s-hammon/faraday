@@ -128,3 +128,8 @@ type NTE struct {
 	SourceOfComment ID
 	Comment         FT `hl7:"rep=Y"`
 }
+
+// The standard DSC segment
+type DSC struct {
+	ContinuationPointer ST
+}

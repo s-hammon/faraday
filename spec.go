@@ -10,6 +10,9 @@ import (
 	"github.com/s-hammon/p"
 )
 
+/*
+FieldSpec describes the HL7 field (not the Go struct field) specification.
+*/
 type FieldSpec struct {
 	Position     uint8
 	Typ          reflect.Type

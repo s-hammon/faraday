@@ -41,7 +41,7 @@ type OBR struct {
 	SpecimenActionCode                 ID
 	DangerCode                         CE
 	RelevantClinicalInfo               ST
-	SpecimenReceivedDateTime           TS `hl7:"req=C"`
+	SpecimenReceivedDateTime           TS `hl7:"opt=C"`
 	SpecimenSource                     CM_SPE
 	OrderingProvider                   XCN `hl7:"rep=Y"`
 	OrderCallbackPhoneNumber           XTN `hl7:"rep=Y2"`
