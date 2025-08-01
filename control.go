@@ -49,7 +49,7 @@ type MSH struct {
 
 func (seg *MSH) UnmarshalHeader(b []byte) error {
 	if len(b) < 6 {
-		return fmt.Errorf("input '%s' too short--must be at least 6 bytes.", string(b))
+		return fmt.Errorf("input '%s' too short--must be at least 6 bytes", string(b))
 	}
 	seg.FieldSeparator = ST(b[:1])
 	seg.EncodingCharacters = ST(b[1:5])
