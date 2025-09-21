@@ -51,6 +51,8 @@ func (spec *FieldSpec) ParseTag(tag string) *FieldSpec {
 }
 
 func (spec *FieldSpec) parse(field, delimiters []byte) error {
+	// NOTE: for now, if the field repeats just use the first element
+	field = bytes.SplitN(field, delimiters[1:2], 2)[0]
 	switch spec.Val.Kind() {
 	default:
 		return fmt.Errorf("unsupported field type: %s", spec.Val.Kind().String())

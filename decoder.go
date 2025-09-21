@@ -37,10 +37,10 @@ type delimiters struct {
 
 func (d delimiters) toSlice() []byte {
 	return []byte{
-		d.component,
-		d.repeat,
-		d.escape,
-		d.subcomponent,
+		d.component,    // [0:1]
+		d.repeat,       // [1:2]
+		d.escape,       // [2:3]
+		d.subcomponent, // [3:4]
 	}
 }
 
