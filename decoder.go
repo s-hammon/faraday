@@ -58,6 +58,13 @@ func (dec *Decoder) Decode(val any) error {
 	}
 
 	elem := v.Elem()
+	if elem.Kind() == reflect.Interface {
+		if elem.IsNil() {
+			return fmt.Errorf("Decode: underlying interface is nil")
+		}
+
+		elem = elem.Elem()
+	}
 	// TODO: also implement support for map[string]any
 	if elem.Kind() != reflect.Struct {
 		return fmt.Errorf("Decoder: not a pointer to struct (got %T)", val)
